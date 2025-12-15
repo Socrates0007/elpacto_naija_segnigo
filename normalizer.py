@@ -314,6 +314,7 @@ def normalize_shopify(order: Dict[str, Any], source_name: str) -> List[List[str]
         })
 
     # build row (same as before)
+    '''
     row = [
         created_at,             # DATE
         order.get("name", ""),  # ORDER NUMBER
@@ -334,7 +335,7 @@ def normalize_shopify(order: Dict[str, Any], source_name: str) -> List[List[str]
         source_name,            # source
         "Shopify",              # SOURCE (platform)
     ]
-
+    '''
     row = [
         first_name,  # FIRST NAME
         last_name,  # LAST NAME
@@ -350,7 +351,8 @@ def normalize_shopify(order: Dict[str, Any], source_name: str) -> List[List[str]
         "",  # SHIPPING FEE
         "",  # TAX
         "",  # ORDERGROUPID
-        order_id,  # ORDER NUMBER
+        order.get("name", ""),  # ORDER NUMBER
+        order_id,  # shopify raw id
         source_name,  # source
     ]
     rows.append(row)
