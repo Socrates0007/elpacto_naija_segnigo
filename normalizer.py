@@ -172,27 +172,27 @@ def normalize_woo(order: Dict[str, Any], source_name: str) -> List[List[str]]:
         product = item.get("name", "")
         qty = item.get("quantity", 1)
         price = item.get("total", "0")
+        sku = item.get("sku")
 
         row = [
-            created_at,             # DATE
-            order_id,               # ORDER NUMBER
-            first_name,             # FIRST NAME
-            last_name,              # LAST NAME
-            billing.get("city", ""),# LOCATION
-            product,                # PRODUCT
-            qty,                    # QUANTITY
-            price,                  # PRICE
-            phone,                  # PHONE NUMBER
-            status,                 # Status
-            "",                     # comments
-            "",                     # (blank column)
-            "",                     # agent in charge
-            "",                     # (blank column)
-            "",                     # shopify name id (not applicable)
-            address,                # ADDRESS
-            source_name,            # source
-            "WooCommerce",          # SOURCE (platform)
+            first_name,  # FIRST NAME
+            last_name,  # LAST NAME
+            phone,  # PHONE NUMBER
+            billing.get("city", ""),  # LOCATION
+            address,  # ADDRESS
+            billing.get("city", ""),  # LOCATION
+            product,  # PRODUCT
+            qty,  # QUANTITY
+            price,  # PRICE
+            sku,  # SKU
+            "",  # DISCOUNT
+            "",  # SHIPPING FEE
+            "",  # TAX
+            "",  # ORDERGROUPID
+            order_id,  # ORDER NUMBER
+            source_name,  # source
         ]
+
         rows.append(row)
 
     return rows
@@ -236,6 +236,7 @@ def normalize_shopify(order: Dict[str, Any], source_name: str) -> List[List[str]
     status = ""   # leave blank so you can fill manually in Sheets
 
     for item in line_items:
+        sku = item.get("sku", "")
         try:
             
             qty = int(item.get("quantity", 1))
@@ -332,6 +333,25 @@ def normalize_shopify(order: Dict[str, Any], source_name: str) -> List[List[str]
         address,                # ADDRESS
         source_name,            # source
         "Shopify",              # SOURCE (platform)
+    ]
+
+    row = [
+        first_name,  # FIRST NAME
+        last_name,  # LAST NAME
+        phone or address_obj.get("phone", ""),  # PHONE NUMBER
+        city or address_obj.get("state", ""),  # STATE
+        address,  # ADDRESS
+        city or address_obj.get("city", ""),  # CITY
+        item.get("title", ""),  # PRODUCT
+        qty,  # QUANTITY
+        str(line_total),  # PRICE (line total after discount)
+        sku,  # SKU
+        "",  # DISCOUNT
+        "",  # SHIPPING FEE
+        "",  # TAX
+        "",  # ORDERGROUPID
+        order_id,  # ORDER NUMBER
+        source_name,  # source
     ]
     rows.append(row)
 

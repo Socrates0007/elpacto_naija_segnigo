@@ -46,7 +46,7 @@ TWILIO_WHATSAPP = os.getenv("TWILIO_WHATSAPP")
 # ==========================
 # Headers
 # ==========================
-HEADERS = [
+'''HEADERS = [
     "DATE",
     "ORDER NUMBER",
     "FIRST NAME",
@@ -66,6 +66,30 @@ HEADERS = [
     "source",
     "SOURCE",
 ]
+'''
+HEADERS = [
+    "FirstName",
+    "LastName",
+    "PhoneNumber",
+    "State",
+    "Address",
+    "City",
+    "ProductName",
+    "Quantity",
+    "LineTotal",
+    "ProductSKU",
+    "Discount",
+    "ShippingFee",
+    "Tax",
+    "OrderGroupID",
+    "order id",
+    "source",
+
+]
+
+
+
+
 
 # ==========================
 # State directory
