@@ -197,9 +197,10 @@ def normalize_woo(order: Dict[str, Any], source_name: str) -> List[List[str]]:
 
     return rows
 
-
+#OLD LOGIC
+'''
 def normalize_shopify(order: Dict[str, Any], source_name: str) -> List[List[str]]:
-    """Convert Shopify order JSON → list of rows for Google Sheets."""
+
     rows = []
     order_id = order.get("id")
     created_at = order.get("created_at", "")[:10]
@@ -314,28 +315,7 @@ def normalize_shopify(order: Dict[str, Any], source_name: str) -> List[List[str]
         })
 
     # build row (same as before)
-    '''
-    row = [
-        created_at,             # DATE
-        order.get("name", ""),  # ORDER NUMBER
-        first_name,             # FIRST NAME
-        last_name,              # LAST NAME
-        city or address_obj.get("city", ""), # LOCATION
-        item.get("title", ""),  # PRODUCT
-        qty,                    # QUANTITY
-        str(line_total),        # PRICE (line total after discount)
-        phone or address_obj.get("phone", ""), # PHONE NUMBER
-        status,                 # Status
-        comments,               # comments
-        "",                     # (blank column)
-        "",                     # agent in charge
-        "",                     # (blank column)
-        order_id,               # shopify raw id
-        address,                # ADDRESS
-        source_name,            # source
-        "Shopify",              # SOURCE (platform)
-    ]
-    '''
+  
     row = [
         first_name,  # FIRST NAME
         last_name,  # LAST NAME
@@ -358,6 +338,115 @@ def normalize_shopify(order: Dict[str, Any], source_name: str) -> List[List[str]
     rows.append(row)
 
     return rows
+'''
+def normalize_shopify(order: Dict[str, Any], source_name: str) -> List[List[str]]:
+    rows = []
+
+    order_id = order.get("id")
+    created_at = order.get("created_at", "")[:10]
+
+    full_name = _get_note_attr(order, "Full name")
+    phone = _get_note_attr(order, "Phone")
+    address_note = _get_note_attr(order, "Address")
+    state = _get_note_attr(order, "State")
+    city = _get_note_attr(order, "City")
+    comments = _get_note_attr(order, "Note")
+
+    if full_name:
+        parts = full_name.strip().split(" ", 1)
+        first_name = parts[0]
+        last_name = parts[1] if len(parts) > 1 else ""
+    else:
+        customer = order.get("customer") or {}
+        first_name = customer.get("first_name", "")
+        last_name = customer.get("last_name", "")
+
+    address_obj = (
+        order.get("shipping_address")
+        or order.get("billing_address")
+        or {}
+    )
+
+    address = address_note or ", ".join(filter(None, [
+        address_obj.get("address1", ""),
+        address_obj.get("address2", ""),
+        address_obj.get("city", ""),
+        address_obj.get("province", ""),
+        address_obj.get("country", "")
+    ]))
+
+    line_items = order.get("line_items", [])
+
+    for item in line_items:
+        sku = item.get("sku", "")
+
+        try:
+            qty = int(item.get("quantity", 1))
+        except Exception:
+            qty = 1
+
+        # unit price
+        try:
+            unit_price = float(item.get("price", 0) or 0)
+        except Exception:
+            p = str(item.get("price", 0)).replace(",", "").replace("₦", "").replace("$", "")
+            unit_price = float(p) if p else 0.0
+
+        # discount
+        discount_value = 0.0
+
+        raw_td = item.get("total_discount")
+        if raw_td:
+            try:
+                discount_value = float(raw_td)
+            except Exception:
+                s = str(raw_td).replace(",", "").replace("₦", "").replace("$", "")
+                discount_value = float(s) if s else 0.0
+
+        if not discount_value and item.get("discount_allocations"):
+            for alloc in item.get("discount_allocations", []):
+                amt = alloc.get("amount") or (
+                    alloc.get("amount_set", {})
+                         .get("shop_money", {})
+                         .get("amount")
+                )
+                if amt:
+                    try:
+                        discount_value += abs(float(amt))
+                    except Exception:
+                        pass
+
+        discount_value = abs(discount_value)
+
+        line_total = round((unit_price * qty) - discount_value, 2)
+
+        # ✅ APPEND INSIDE LOOP
+        row = [
+            first_name,
+            last_name,
+            phone or address_obj.get("phone", ""),
+            city or address_obj.get("province", ""),
+            address,
+            city or address_obj.get("city", ""),
+            item.get("title", ""),
+            qty,
+            str(line_total),
+            sku,
+            str(discount_value),
+            "",  # SHIPPING FEE
+            "",  # TAX
+            "",  # ORDERGROUPID
+            order.get("name", ""),
+            order_id,
+            source_name,
+        ]
+
+        rows.append(row)
+
+    return rows
+
+
+
 
 
 def normalize_order(order_entry: Dict[str, Any]) -> List[List[str]]:
